@@ -1,6 +1,6 @@
 {
 	"name": "mkfifo",
-	"version": "0.0.1",
+	"version": "0.1.1",
 	"description": "mkfifo(3) for NodeJS",
 	"keywords": [
 		"mkfifo"
@@ -17,5 +17,8 @@
 		"node": ">=0.10"
 	},
 
-	"os": ["linux", "freebsd", "darwin"]
+	"os": ["linux", "freebsd", "darwin"],
+	"dependencies": {
+		"nan": "*"
+	}
 }

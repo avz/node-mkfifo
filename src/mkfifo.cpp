@@ -4,38 +4,41 @@
 #include <errno.h>
 
 #include <node.h>
+#include <nan.h>
 
 using namespace v8;
 
-Handle<Value> MkfifoSync(const Arguments& args) {
-	HandleScope scope;
+NAN_METHOD(MkfifoSync) {
+	NanScope();
 
 	if (args.Length() < 2) {
-		ThrowException(Exception::TypeError(String::New("Wrong number of arguments")));
-		return scope.Close(Undefined());
+		NanThrowTypeError("Wrong number of arguments");
+		NanReturnUndefined();
 	}
 
 	if (!args[0]->IsString() || !args[1]->IsNumber()) {
-		ThrowException(Exception::TypeError(String::New("Wrong arguments")));
-		return scope.Close(Undefined());
+		NanThrowTypeError("Wrong arguments");
+		NanReturnUndefined();
 	}
 
 
 	mode_t mode = (mode_t)args[1]->Uint32Value();
-	String::AsciiValue pathAscii(args[0]);
+	NanUtf8String pathAscii(args[0]);
 
 	if(mkfifo(*pathAscii, mode) != 0) {
-		ThrowException(node::ErrnoException(errno, "mkfifo", strerror(errno), *pathAscii));
+		NanThrowError(node::ErrnoException(errno, "mkfifo", strerror(errno), *pathAscii));
 
-		return scope.Close(Undefined());
+		NanReturnUndefined();
 	}
 
-	return scope.Close(Undefined());
+	NanReturnUndefined();
 }
 
 void Init(Handle<Object> exports) {
-  exports->Set(String::NewSymbol("mkfifoSync"),
-      FunctionTemplate::New(MkfifoSync)->GetFunction());
+	exports->Set(
+		NanNew<v8::String>("mkfifoSync"),
+		NanNew<v8::FunctionTemplate>(MkfifoSync)->GetFunction()
+	);
 }
 
 NODE_MODULE(mkfifo, Init)
