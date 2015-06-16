@@ -1,12 +1,26 @@
+#define _BSD_SOURCE
+
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <string.h>
+#include <stdio.h>
 #include <errno.h>
 
 #include <node.h>
 #include <nan.h>
 
 using namespace v8;
+
+NAN_INLINE v8::Local<v8::Value> ErrnoException(
+		const int erno
+		, const char *what
+		, const char *where
+) {
+	char buf[256];
+
+	snprintf(buf, sizeof(buf), "%s %s: %s [%d]", what, where, strerror(errno), (int)(errno));
+	return NanError(buf, erno);
+}
 
 NAN_METHOD(MkfifoSync) {
 	NanScope();
@@ -26,7 +40,7 @@ NAN_METHOD(MkfifoSync) {
 	NanUtf8String pathAscii(args[0]);
 
 	if(mkfifo(*pathAscii, mode) != 0) {
-		NanThrowError(node::ErrnoException(errno, "mkfifo", strerror(errno), *pathAscii));
+		NanThrowError(ErrnoException(errno, "mkfifo", *pathAscii));
 
 		NanReturnUndefined();
 	}
