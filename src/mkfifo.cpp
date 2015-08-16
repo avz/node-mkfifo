@@ -11,48 +11,36 @@
 
 using namespace v8;
 
-NAN_INLINE v8::Local<v8::Value> ErrnoException(
-		const int erno
-		, const char *what
-		, const char *where
-) {
-	char buf[256];
-
-	snprintf(buf, sizeof(buf), "%s %s: %s [%d]", what, where, strerror(errno), (int)(errno));
-	return NanError(buf, erno);
-}
-
-NAN_METHOD(MkfifoSync) {
-	NanScope();
-
+void MkfifoSync(const Nan::FunctionCallbackInfo<v8::Value>& args) {
 	if (args.Length() < 2) {
-		NanThrowTypeError("Wrong number of arguments");
-		NanReturnUndefined();
+		Nan::ThrowTypeError("Wrong number of arguments");
+		args.GetReturnValue().Set(Nan::Undefined());
 	}
 
 	if (!args[0]->IsString() || !args[1]->IsNumber()) {
-		NanThrowTypeError("Wrong arguments");
-		NanReturnUndefined();
+		Nan::ThrowTypeError("Wrong arguments");
+		args.GetReturnValue().Set(Nan::Undefined());
 	}
 
 
 	mode_t mode = (mode_t)args[1]->Uint32Value();
-	NanUtf8String pathAscii(args[0]);
+	Nan::Utf8String pathAscii(args[0]);
 
 	if(mkfifo(*pathAscii, mode) != 0) {
-		NanThrowError(ErrnoException(errno, "mkfifo", *pathAscii));
+		Nan::ThrowError(Nan::NanErrnoException(errno, "mkfifo", *pathAscii));
 
-		NanReturnUndefined();
+		args.GetReturnValue().Set(Nan::Undefined());
 	}
 
-	NanReturnUndefined();
+	args.GetReturnValue().Set(Nan::Undefined());
 }
 
 void Init(Handle<Object> exports) {
-	exports->Set(
-		NanNew<v8::String>("mkfifoSync"),
-		NanNew<v8::FunctionTemplate>(MkfifoSync)->GetFunction()
+	Nan::SetMethod(
+		exports,
+		"mkfifoSync",
+		MkfifoSync
 	);
 }
 
-NODE_MODULE(mkfifo, Init)
+NODE_MODULE(mkfifo, Init);
