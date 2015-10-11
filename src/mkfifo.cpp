@@ -26,7 +26,7 @@ void MkfifoSync(const Nan::FunctionCallbackInfo<v8::Value>& args) {
 	Nan::Utf8String pathAscii(args[0]);
 
 	if(mkfifo(*pathAscii, mode) != 0) {
-		Nan::ThrowError(Nan::NanErrnoException(errno, "mkfifo", *pathAscii));
+		Nan::ThrowError(Nan::ErrnoException(errno, "mkfifo", *pathAscii));
 		return;
 	}
 }
