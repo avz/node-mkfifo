@@ -14,25 +14,21 @@ using namespace v8;
 void MkfifoSync(const Nan::FunctionCallbackInfo<v8::Value>& args) {
 	if (args.Length() < 2) {
 		Nan::ThrowTypeError("Wrong number of arguments");
-		args.GetReturnValue().Set(Nan::Undefined());
+		return;
 	}
 
 	if (!args[0]->IsString() || !args[1]->IsNumber()) {
 		Nan::ThrowTypeError("Wrong arguments");
-		args.GetReturnValue().Set(Nan::Undefined());
+		return;
 	}
-
 
 	mode_t mode = (mode_t)args[1]->Uint32Value();
 	Nan::Utf8String pathAscii(args[0]);
 
 	if(mkfifo(*pathAscii, mode) != 0) {
 		Nan::ThrowError(Nan::NanErrnoException(errno, "mkfifo", *pathAscii));
-
-		args.GetReturnValue().Set(Nan::Undefined());
+		return;
 	}
-
-	args.GetReturnValue().Set(Nan::Undefined());
 }
 
 void Init(Handle<Object> exports) {
