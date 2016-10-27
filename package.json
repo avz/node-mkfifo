@@ -1,24 +1,34 @@
 {
-	"name": "mkfifo",
-	"version": "0.1.5",
-	"description": "mkfifo(3) for NodeJS",
-	"keywords": [
-		"mkfifo"
-	],
-	"homepage": "https://github.com/avz/node-mkfifo",
-	"repository": {
-		"type" : "git",
-		"url" : "https://github.com/avz/node-mkfifo.git"
-	},
-	"license": "BSD",
-	"author": "Artem Zaytsev <arepo@nologin.ru>",
-	"main": "./main.js",
-	"engines": {
-		"node": ">=0.10"
-	},
-
-	"os": ["linux", "freebsd", "darwin"],
-	"dependencies": {
-		"nan": "2.3"
-	}
+  "name": "mkfifo",
+  "version": "0.1.5",
+  "description": "mkfifo(3) for NodeJS",
+  "keywords": [
+    "mkfifo"
+  ],
+  "homepage": "https://github.com/avz/node-mkfifo",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/avz/node-mkfifo.git"
+  },
+  "license": "BSD",
+  "author": "Artem Zaytsev <arepo@nologin.ru>",
+  "main": "./main.js",
+  "engines": {
+    "node": ">=0.10"
+  },
+  "scripts": {
+    "test": "ava --timeout=2s"
+  },
+  "os": [
+    "linux",
+    "freebsd",
+    "darwin"
+  ],
+  "dependencies": {
+    "nan": "2.3"
+  },
+  "devDependencies": {
+    "ava": "^0.16.0",
+    "fs-extra": "^0.30.0"
+  }
 }
