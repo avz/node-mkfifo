@@ -10,7 +10,7 @@
     "type": "git",
     "url": "https://github.com/avz/node-mkfifo.git"
   },
-  "license": "BSD",
+  "license": "MIT",
   "author": "Artem Zaytsev <arepo@nologin.ru>",
   "main": "./main.js",
   "engines": {
