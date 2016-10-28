@@ -13,7 +13,7 @@ npm install mkfifo
 ```javascript
 var mkfifoSync = require('mkfifo').mkfifoSync;
 
-mkfifoSync('/path/to/fifo', 0755);
+mkfifoSync('/path/to/fifo', 0600);
 ```
 
 ### Async
@@ -21,7 +21,7 @@ mkfifoSync('/path/to/fifo', 0755);
 ```javascript
 var mkfifo = require('mkfifo').mkfifo;
 
-mkfifo('/path/to/fifo', 0755, function(err) {
+mkfifo('/path/to/fifo', 0600, function(err) {
 	/* ... */
 });
 ```
