@@ -1,30 +1,87 @@
-import test from 'ava';
-const mkfifo = require('../');
-const fs = require('fs-extra');
-const path = require('path');
+var mkfifo = require('../');
+var os = require('os');
+var fs = require('fs');
+var path = require('path');
+var crypto = require('crypto');
 
-var testTmpDir;
-var pipePath;
+function checkFIFOSync(path, mode, test) {
+	var stat = fs.statSync(path);
 
-test.beforeEach(t => {
-	testTmpDir = fs.mkdtempSync(path.join(__dirname, 'tmp-'));
-	pipePath = path.join(testTmpDir, 'test-pipe');
-	fs.emptyDirSync(testTmpDir);
-});
+	test.ok(stat.isFIFO());
+	test.strictEqual(stat.mode & 0o777, mode);
+};
 
-test.afterEach(t => {
-	fs.removeSync(testTmpDir);
-});
+module.exports = {
+	setUp: function(cb) {
+		this.tmppath = path.join(
+			os.tmpdir(),
+			'.node-mkfifo.tmp.' + Date.now() + '.' + crypto.randomBytes(8).toString('hex')
+		);
 
-test.cb('creates a pipe', t => {
-	mkfifo.mkfifo(pipePath, 0o644, err => {
-		if (err) {
-			t.is(err, null, 'err must be null');
-			t.end();
-		} else {
-			const stats = fs.statSync(pipePath);
-			t.truthy(stats.isFIFO());
-			t.end();
+		cb();
+	},
+	tearDown: function(cb) {
+		try {
+			fs.unlinkSync(this.tmppath);
+		} catch (e) {
+
 		}
-	});
-});
+
+		cb();
+	},
+	mkfifoSync_mode1: function(test) {
+		var mode = 0o644;
+		mkfifo.mkfifoSync(this.tmppath, mode);
+		checkFIFOSync(this.tmppath, mode, test);
+
+		test.done();
+	},
+	mkfifoSync_mode2: function(test) {
+		var mode = 0o600;
+
+		mkfifo.mkfifoSync(this.tmppath, mode);
+		checkFIFOSync(this.tmppath, mode, test);
+
+		test.done();
+	},
+	mkfifoSync_error: function(test) {
+		test.throws(
+			function() {
+				mkfifo.mkfifoSync(this.tmppath + '/nonexistent', 0o644);
+			},
+			Error,
+			'ENOENT'
+		);
+
+		test.done();
+	},
+	mkfifoAsync_mode1: function(test) {
+		var self = this;
+		var mode = 0o644;
+
+		mkfifo.mkfifo(this.tmppath, mode, function(error) {
+			test.strictEqual(error, undefined);
+			checkFIFOSync(self.tmppath, mode, test);
+
+			test.done();
+		});
+	},
+	mkfifoAsync_mode2: function(test) {
+		var self = this;
+		var mode = 0o600;
+
+		mkfifo.mkfifo(this.tmppath, mode, function(error) {
+			test.strictEqual(error, undefined);
+			checkFIFOSync(self.tmppath, mode, test);
+
+			test.done();
+		});
+	},
+	mkfifoAsync_error: function(test) {
+		mkfifo.mkfifo(this.tmppath + '/nonexistent', 0o644, function(error) {
+			test.ok(error instanceof Error);
+			test.strictEqual(error.code, 'ENOENT');
+			test.done();
+		});
+	}
+};

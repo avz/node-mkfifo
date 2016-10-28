@@ -17,7 +17,7 @@
     "node": ">=0.10"
   },
   "scripts": {
-    "test": "ava --timeout=2s"
+    "test": "nodeunit test"
   },
   "os": [
     "linux",
@@ -28,7 +28,6 @@
     "nan": "2.3"
   },
   "devDependencies": {
-    "ava": "^0.16.0",
-    "fs-extra": "^0.30.0"
+    "nodeunit": "^0.10.2"
   }
 }
