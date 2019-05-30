@@ -1,3 +1,5 @@
 nbproject
 build
 node_modules
+.idea
+test.js

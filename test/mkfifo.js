@@ -79,8 +79,8 @@ module.exports = {
 	},
 	mkfifoAsync_error: function(test) {
 		mkfifo.mkfifo(this.tmppath + '/nonexistent', 0644, function(error) {
-			test.ok(error instanceof Error);
-			test.strictEqual(error.code, 'ENOENT');
+			test.ok(error.errno > 0);
+			test.strictEqual(typeof(error.errstr), 'string');
 			test.done();
 		});
 	}

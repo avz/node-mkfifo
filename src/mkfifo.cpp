@@ -5,129 +5,123 @@
 #include <string.h>
 #include <stdio.h>
 #include <errno.h>
+#include <string>
 
+#include "napi.h"
 
-#include <v8.h>
-#include <node.h>
-#include <nan.h>
+Napi::Value MkfifoSync(const Napi::CallbackInfo& args)
+{
+	Napi::Env env = args.Env();
 
-using namespace v8;
-
-void MkfifoSync(const Nan::FunctionCallbackInfo<v8::Value>& args) {
 	if (args.Length() < 2) {
-		Nan::ThrowTypeError("Wrong number of arguments");
-		return;
+		Napi::TypeError::New(env, "Wrong number of arguments").ThrowAsJavaScriptException();
+
+		return env.Undefined();
 	}
 
-	if (!args[0]->IsString() || !args[1]->IsNumber()) {
-		Nan::ThrowTypeError("Wrong arguments");
-		return;
+	if (!args[0].IsString() || !args[1].IsNumber()) {
+		Napi::TypeError::New(env, "Wrong arguments").ThrowAsJavaScriptException();
+
+		return env.Undefined();
 	}
 
-	mode_t mode = (mode_t)args[1]->Uint32Value();
-	Nan::Utf8String pathAscii(args[0]);
+	const mode_t mode = (mode_t)args[1].ToNumber().Uint32Value();
+	const std::string path(args[0].ToString().Utf8Value());
 
-	if (mkfifo(*pathAscii, mode) != 0) {
-		Nan::ThrowError(Nan::ErrnoException(errno, "mkfifo", *pathAscii));
-		return;
+	if (mkfifo(path.c_str(), mode) != 0) {
+		Napi::TypeError::New(env, "mkfifo(" + path + "):" + strerror(errno)).ThrowAsJavaScriptException();
+
+		return env.Undefined();
 	}
+
+	return env.Undefined();
 }
 
-class MkfifoInfo {
-public:
-	Nan::Utf8String path;
+class MkfifoAsyncWorker : public Napi::AsyncWorker
+{
+	const std::string path;
 	mode_t mode;
-	Nan::Persistent<Function> cb;
 	int error;
 
-	MkfifoInfo(Local<String> path, mode_t mode, Local<Function> callback)
-		: path(path), mode(mode), error(0)
+public:
+
+	MkfifoAsyncWorker(Napi::Function &callback, const std::string &path, mode_t mode)
+		: Napi::AsyncWorker(callback), path(path), mode(mode)
 	{
-		cb.Reset(callback);
 	}
 
-	~MkfifoInfo() {
-		cb.Reset();
+	~MkfifoAsyncWorker()
+	{
+	}
+
+	void Execute()
+	{
+		if (mkfifo(path.c_str(), mode) == 0) {
+			error = 0;
+		} else {
+			error = errno;
+		}
+	}
+
+	void OnOK()
+	{
+		Napi::Env env = Env();
+		Napi::HandleScope scope(env);
+
+		if (error == 0) {
+			Callback().Call({env.Undefined()});
+
+			return;
+		}
+
+		Napi::Object err = Napi::Object::New(env);
+
+		err.Set("errno", (int)error);
+		err.Set("errstr", strerror(error));
+
+		this->Callback().Call({err});
 	}
 };
 
-void MkfifoAsyncWorkHandler(uv_work_t* req) {
-	MkfifoInfo* mkfifoInfo = (MkfifoInfo *)req->data;
+Napi::Value MkfifoAsync(const Napi::CallbackInfo& args)
+{
+	Napi::Env env = args.Env();
 
-	if (mkfifo(*mkfifoInfo->path, mkfifoInfo->mode) != 0) {
-		mkfifoInfo->error = errno;
+	if (args.Length() < 2) {
+		Napi::TypeError::New(env, "Wrong number of arguments").ThrowAsJavaScriptException();
+
+		return env.Undefined();
 	}
+
+	if (!args[0].IsString() || !args[1].IsNumber()) {
+		Napi::TypeError::New(env, "Wrong arguments").ThrowAsJavaScriptException();
+
+		return env.Undefined();
+	}
+
+	const std::string path(args[0].ToString().Utf8Value());
+	const mode_t mode = (mode_t)args[1].ToNumber().Uint32Value();
+
+	if (!args[2].IsFunction()) {
+		Napi::TypeError::New(env, "callback must be a function").ThrowAsJavaScriptException();
+
+		return env.Undefined();
+	}
+
+	Napi::Function callback = args[2].As<Napi::Function>();
+	MkfifoAsyncWorker* worker = new MkfifoAsyncWorker(callback, path, mode);
+
+	worker->Queue();
+
+	return env.Undefined();
 }
 
+Napi::Object Init(Napi::Env env, Napi::Object exports)
+{
+	exports.Set(Napi::String::New(env, "mkfifoSync"), Napi::Function::New(env, MkfifoSync));
+	exports.Set(Napi::String::New(env, "mkfifo"), Napi::Function::New(env, MkfifoAsync));
 
-void MkfifoAsyncWorkReturnHandler(uv_work_t* req) {
-	MkfifoInfo* mkfifoInfo = (MkfifoInfo *)req->data;
-	Nan::HandleScope scope;
-
-	Local<Value> argv[1];
-
-	if (mkfifoInfo->error) {
-		argv[0] = Nan::ErrnoException(mkfifoInfo->error, "mkfifo", *mkfifoInfo->path);
-	} else {
-		argv[0] = Nan::Undefined();
-	}
-
-	Local<Function> cb = Nan::New(mkfifoInfo->cb);
-
-	Nan::MakeCallback(Nan::GetCurrentContext()->Global(), cb, 1, argv);
-
-	delete mkfifoInfo;
-	delete req;
+	return exports;
 }
 
-void MkfifoAsync(const Nan::FunctionCallbackInfo<v8::Value>& args) {
-	if (args.Length() < 3) {
-		Nan::ThrowTypeError("Wrong number of arguments");
-		return;
-	}
-
-	if (!args[0]->IsString()) {
-		return Nan::ThrowTypeError("path must be a string");
-	}
-
-	Local<String> path = args[0].As<String>();
-
-	if (!args[1]->IsNumber()) {
-		return Nan::ThrowTypeError("mode must be a number");
-	}
-
-	mode_t mode = (mode_t)args[1]->Uint32Value();
-
-	if (!args[2]->IsFunction()) {
-		return Nan::ThrowTypeError("callback must be a function");
-	}
-
-	Local<Function> cb = Local<Function>::Cast(args[2]);
-
-	MkfifoInfo* mkfifoInfo = new MkfifoInfo(path, mode, cb);
-
-	uv_work_t* req = new uv_work_t;
-	req->data = mkfifoInfo;
-	uv_queue_work(
-		uv_default_loop(),
-		req,
-		MkfifoAsyncWorkHandler,
-		(uv_after_work_cb)MkfifoAsyncWorkReturnHandler
-	);
-}
-
-void Init(Handle<Object> exports) {
-	Nan::SetMethod(
-		exports,
-		"mkfifoSync",
-		MkfifoSync
-	);
-
-	Nan::SetMethod(
-		exports,
-		"mkfifo",
-		MkfifoAsync
-	);
-}
-
-NODE_MODULE(mkfifo, Init);
+NODE_API_MODULE(mkfifo, Init);
