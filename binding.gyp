@@ -3,8 +3,8 @@
 		{
 			'target_name': 'mkfifo',
 			'sources': ['src/mkfifo.cpp'],
-			'include_dirs': ["<!@(node -p \"require('node-addon-api').include\")"],
-			'dependencies': ["<!(node -p \"require('node-addon-api').gyp\")"],
+			'include_dirs': ["<!@(node --no-warnings -p \"require('node-addon-api').include\")"],
+			'dependencies': ["<!(node --no-warnings -p \"require('node-addon-api').gyp\")"],
 			'conditions': [
 				['OS=="mac"', {
 					'cflags+': ['-fvisibility=hidden'],
