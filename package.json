@@ -13,6 +13,7 @@
   "license": "MIT",
   "author": "Artem Zaytsev <arepo@nologin.ru>",
   "main": "./main.js",
+  "types": "./types/main.d.ts",
   "engines": {
     "node": ">=8.12"
   },
